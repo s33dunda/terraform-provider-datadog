@@ -26,12 +26,12 @@ func resourceDatadogSyntheticsTest() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"type": {
+			"type": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validation.StringInSlice(syntheticsTypes, false),
 			},
-			"subtype": {
+			"subtype": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(key, old, new string, d *schema.ResourceData) bool {
@@ -43,50 +43,112 @@ func resourceDatadogSyntheticsTest() *schema.Resource {
 				},
 				ValidateFunc: validation.StringInSlice(syntheticsSubTypes, false),
 			},
-			"request": syntheticsTestRequest(),
-			"request_headers": {
+			"request": &schema.Schema{
+				Type:     schema.TypeMap,
+				Required: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"method": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"url": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"body": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"timeout": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  60,
+						},
+						"host": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"port": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  60,
+						},
+					},
+				},
+			},
+			"request_headers": &schema.Schema{
 				Type:     schema.TypeMap,
 				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"assertions": {
+			"assertions": &schema.Schema{
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeMap,
+					Elem: &schema.Schema{Type: schema.TypeString},
 				},
 			},
-			"device_ids": {
+			"device_ids": &schema.Schema{
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"locations": {
+			"locations": &schema.Schema{
 				Type:     schema.TypeList,
 				Required: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"options": &schema.Schema{
+				Type:             schema.TypeMap,
+				DiffSuppressFunc: convertBools,
+				ValidateFunc:     validateSchema,
+				Optional:         true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"follow_redirects": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"min_failure_duration": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"min_location_failed": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"tick_every": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+						"accept_self_signed": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
 				},
 			},
-			"options": syntheticsTestOptions(),
-			"name": {
+			"name": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"message": {
+			"message": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "",
 			},
-			"tags": {
+			"tags": &schema.Schema{
 				Type:     schema.TypeList,
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"status": {
+			"status": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"monitor_id": {
+			"monitor_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
@@ -94,112 +156,46 @@ func resourceDatadogSyntheticsTest() *schema.Resource {
 	}
 }
 
-func syntheticsTestRequest() *schema.Schema {
-	return &schema.Schema{
-		Type:     schema.TypeMap,
-		Required: true,
-		Elem: &schema.Resource{
-			Schema: map[string]*schema.Schema{
-				"method": {
-					Type:     schema.TypeString,
-					Optional: true,
-				},
-				"url": {
-					Type:     schema.TypeString,
-					Optional: true,
-				},
-				"body": {
-					Type:     schema.TypeString,
-					Optional: true,
-				},
-				"timeout": {
-					Type:     schema.TypeInt,
-					Optional: true,
-					Default:  60,
-				},
-				"host": {
-					Type:     schema.TypeString,
-					Optional: true,
-				},
-				"port": {
-					Type:     schema.TypeInt,
-					Optional: true,
-					Default:  60,
-				},
-			},
-		},
+func convertBools(key, old, new string, d *schema.ResourceData) bool {
+	if key == "options.follow_redirects" || key == "options.accept_self_signed" {
+		// TF nested schemas is limited to string values only
+		// follow_redirects and accept_self_signed being booleans in Datadog json api
+		// we need a sane way to convert from boolean to string
+		// and from string to boolean
+		oldValue, err1 := strconv.ParseBool(old)
+		newValue, err2 := strconv.ParseBool(new)
+		if err1 != nil || err2 != nil {
+			return false
+		}
+		return oldValue == newValue
 	}
+	return old == new
 }
 
-func syntheticsTestOptions() *schema.Schema {
-	return &schema.Schema{
-		Type: schema.TypeMap,
-		DiffSuppressFunc: func(key, old, new string, d *schema.ResourceData) bool {
-			if key == "options.follow_redirects" || key == "options.accept_self_signed" {
-				// TF nested schemas is limited to string values only
-				// follow_redirects and accept_self_signed being booleans in Datadog json api
-				// we need a sane way to convert from boolean to string
-				// and from string to boolean
-				oldValue, err1 := strconv.ParseBool(old)
-				newValue, err2 := strconv.ParseBool(new)
-				if err1 != nil || err2 != nil {
-					return false
-				}
-				return oldValue == newValue
-			}
-			return old == new
-		},
-		ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-			followRedirectsRaw, ok := val.(map[string]interface{})["follow_redirects"]
-			if ok {
-				followRedirectsStr := convertToString(followRedirectsRaw)
-				switch followRedirectsStr {
-				case "0", "1":
-					warns = append(warns, fmt.Sprintf("%q.follow_redirects must be either true or false, got: %s (please change 1 => true, 0 => false)", key, followRedirectsStr))
-				case "true", "false":
-					break
-				default:
-					errs = append(errs, fmt.Errorf("%q.follow_redirects must be either true or false, got: %s", key, followRedirectsStr))
-				}
-			}
-			acceptSelfSignedRaw, ok := val.(map[string]interface{})["accept_self_signed"]
-			if ok {
-				acceptSelfSignedStr := convertToString(acceptSelfSignedRaw)
-				switch acceptSelfSignedStr {
-				case "true", "false":
-					break
-				default:
-					errs = append(errs, fmt.Errorf("%q.accept_self_signed must be either true or false, got: %s", key, acceptSelfSignedStr))
-				}
-			}
-			return
-		},
-		Optional: true,
-		Elem: &schema.Resource{
-			Schema: map[string]*schema.Schema{
-				"follow_redirects": {
-					Type:     schema.TypeBool,
-					Optional: true,
-				},
-				"min_failure_duration": {
-					Type:     schema.TypeInt,
-					Optional: true,
-				},
-				"min_location_failed": {
-					Type:     schema.TypeInt,
-					Optional: true,
-				},
-				"tick_every": {
-					Type:     schema.TypeInt,
-					Required: true,
-				},
-				"accept_self_signed": {
-					Type:     schema.TypeBool,
-					Optional: true,
-				},
-			},
-		},
+func validateSchema(val interface{}, key string) (warns []string, errs []error) {
+	followRedirectsRaw, ok := val.(map[string]interface{})["follow_redirects"]
+	if ok {
+		followRedirectsStr := convertToString(followRedirectsRaw)
+		switch followRedirectsStr {
+		case "0", "1":
+			warns = append(warns, fmt.Sprintf("%q.follow_redirects must be either true or false, got: %s (please change 1 => true, 0 => false)", key, followRedirectsStr))
+		case "true", "false":
+			break
+		default:
+			errs = append(errs, fmt.Errorf("%q.follow_redirects must be either true or false, got: %s", key, followRedirectsStr))
+		}
 	}
+	acceptSelfSignedRaw, ok := val.(map[string]interface{})["accept_self_signed"]
+	if ok {
+		acceptSelfSignedStr := convertToString(acceptSelfSignedRaw)
+		switch acceptSelfSignedStr {
+		case "true", "false":
+			break
+		default:
+			errs = append(errs, fmt.Errorf("%q.accept_self_signed must be either true or false, got: %s", key, acceptSelfSignedStr))
+		}
+	}
+	return
 }
 
 func resourceDatadogSyntheticsTestCreate(d *schema.ResourceData, meta interface{}) error {
