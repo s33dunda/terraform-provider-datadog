@@ -100,32 +100,54 @@ func resourceDatadogSyntheticsTest() *schema.Resource {
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			// From: https://www.terraform.io/docs/extend/writing-custom-providers.html
+			// Due to the limitation of tf-11115 it is not possible to nest maps.
+			// So the workaround is to let only the innermost data structure be of the type TypeMap: in this case retry.
+			// The outer data structures are of TypeList which can only have one item.
 			"options": &schema.Schema{
-				Type:             schema.TypeMap,
-				DiffSuppressFunc: convertBools,
-				ValidateFunc:     validateSchema,
-				Optional:         true,
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"follow_redirects": {
+						"follow_redirects": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
 						},
-						"min_failure_duration": {
+						"min_failure_duration": &schema.Schema{
 							Type:     schema.TypeInt,
 							Optional: true,
 						},
-						"min_location_failed": {
+						"min_location_failed": &schema.Schema{
 							Type:     schema.TypeInt,
 							Optional: true,
 						},
-						"tick_every": {
+						"tick_every": &schema.Schema{
 							Type:     schema.TypeInt,
 							Required: true,
 						},
-						"accept_self_signed": {
+						"accept_self_signed": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
+						},
+						"retry": &schema.Schema{
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"interval": &schema.Schema{
+										Type:     schema.TypeInt,
+										Optional: true,
+										Default:  0,
+									},
+									"count": &schema.Schema{
+										Type:     schema.TypeInt,
+										Optional: true,
+										Default:  0,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -154,48 +176,6 @@ func resourceDatadogSyntheticsTest() *schema.Resource {
 			},
 		},
 	}
-}
-
-func convertBools(key, old, new string, d *schema.ResourceData) bool {
-	if key == "options.follow_redirects" || key == "options.accept_self_signed" {
-		// TF nested schemas is limited to string values only
-		// follow_redirects and accept_self_signed being booleans in Datadog json api
-		// we need a sane way to convert from boolean to string
-		// and from string to boolean
-		oldValue, err1 := strconv.ParseBool(old)
-		newValue, err2 := strconv.ParseBool(new)
-		if err1 != nil || err2 != nil {
-			return false
-		}
-		return oldValue == newValue
-	}
-	return old == new
-}
-
-func validateSchema(val interface{}, key string) (warns []string, errs []error) {
-	followRedirectsRaw, ok := val.(map[string]interface{})["follow_redirects"]
-	if ok {
-		followRedirectsStr := convertToString(followRedirectsRaw)
-		switch followRedirectsStr {
-		case "0", "1":
-			warns = append(warns, fmt.Sprintf("%q.follow_redirects must be either true or false, got: %s (please change 1 => true, 0 => false)", key, followRedirectsStr))
-		case "true", "false":
-			break
-		default:
-			errs = append(errs, fmt.Errorf("%q.follow_redirects must be either true or false, got: %s", key, followRedirectsStr))
-		}
-	}
-	acceptSelfSignedRaw, ok := val.(map[string]interface{})["accept_self_signed"]
-	if ok {
-		acceptSelfSignedStr := convertToString(acceptSelfSignedRaw)
-		switch acceptSelfSignedStr {
-		case "true", "false":
-			break
-		default:
-			errs = append(errs, fmt.Errorf("%q.accept_self_signed must be either true or false, got: %s", key, acceptSelfSignedStr))
-		}
-	}
-	return
 }
 
 func resourceDatadogSyntheticsTestCreate(d *schema.ResourceData, meta interface{}) error {
@@ -335,32 +315,7 @@ func newSyntheticsTestFromLocalState(d *schema.ResourceData) *datadog.Synthetics
 		}
 	}
 
-	options := datadog.SyntheticsOptions{}
-	if attr, ok := d.GetOk("options.tick_every"); ok {
-		tickEvery, _ := strconv.Atoi(attr.(string))
-		options.SetTickEvery(tickEvery)
-	}
-	if attr, ok := d.GetOk("options.follow_redirects"); ok {
-		// follow_redirects is a string ("true" or "false") in TF state
-		// it used to be "1" and "0" but it does not play well with the API
-		// we support both for retro-compatibility
-		followRedirects, _ := strconv.ParseBool(attr.(string))
-		options.SetFollowRedirects(followRedirects)
-	}
-	if attr, ok := d.GetOk("options.min_failure_duration"); ok {
-		minFailureDuration, _ := strconv.Atoi(attr.(string))
-		options.SetMinFailureDuration(minFailureDuration)
-	}
-	if attr, ok := d.GetOk("options.min_location_failed"); ok {
-		minLocationFailed, _ := strconv.Atoi(attr.(string))
-		options.SetMinLocationFailed(minLocationFailed)
-	}
-	if attr, ok := d.GetOk("options.accept_self_signed"); ok {
-		// for some reason, attr is equal to "1" or "0" in TF 0.11
-		// so ParseBool is required for retro-compatibility
-		acceptSelfSigned, _ := strconv.ParseBool(attr.(string))
-		options.SetAcceptSelfSigned(acceptSelfSigned)
-	}
+	options := expandOptions(d.Get("options").([]interface{})[0].(map[string]interface{}))
 	if attr, ok := d.GetOk("device_ids"); ok {
 		deviceIds := []string{}
 		for _, s := range attr.([]interface{}) {
@@ -373,7 +328,7 @@ func newSyntheticsTestFromLocalState(d *schema.ResourceData) *datadog.Synthetics
 		Name:    datadog.String(d.Get("name").(string)),
 		Type:    datadog.String(d.Get("type").(string)),
 		Config:  &config,
-		Options: &options,
+		Options: options,
 		Message: datadog.String(d.Get("message").(string)),
 		Status:  datadog.String(d.Get("status").(string)),
 	}
@@ -459,31 +414,61 @@ func updateSyntheticsTestLocalState(d *schema.ResourceData, syntheticsTest *data
 
 	d.Set("locations", syntheticsTest.Locations)
 
-	actualOptions := syntheticsTest.GetOptions()
-	localOptions := make(map[string]string)
-	if actualOptions.HasFollowRedirects() {
-		localOptions["follow_redirects"] = convertToString(actualOptions.GetFollowRedirects())
-	}
-	if actualOptions.HasMinFailureDuration() {
-		localOptions["min_failure_duration"] = convertToString(actualOptions.GetMinFailureDuration())
-	}
-	if actualOptions.HasMinLocationFailed() {
-		localOptions["min_location_failed"] = convertToString(actualOptions.GetMinLocationFailed())
-	}
-	if actualOptions.HasTickEvery() {
-		localOptions["tick_every"] = convertToString(actualOptions.GetTickEvery())
-	}
-	if actualOptions.HasAcceptSelfSigned() {
-		localOptions["accept_self_signed"] = convertToString(actualOptions.GetAcceptSelfSigned())
-	}
-
-	d.Set("options", localOptions)
+	d.Set("options", flattenOptions(syntheticsTest.GetOptions()))
 
 	d.Set("name", syntheticsTest.GetName())
 	d.Set("message", syntheticsTest.GetMessage())
 	d.Set("status", syntheticsTest.GetStatus())
 	d.Set("tags", syntheticsTest.Tags)
 	d.Set("monitor_id", syntheticsTest.MonitorId)
+}
+
+func flattenOptions(options datadog.SyntheticsOptions) []interface{} {
+	localOptions := make(map[string]interface{})
+	if options.HasFollowRedirects() {
+		localOptions["follow_redirects"] = options.GetFollowRedirects()
+	}
+	if options.HasMinFailureDuration() {
+		localOptions["min_failure_duration"] = options.GetMinFailureDuration()
+	}
+	if options.HasMinLocationFailed() {
+		localOptions["min_location_failed"] = options.GetMinLocationFailed()
+	}
+	if options.HasTickEvery() {
+		localOptions["tick_every"] = options.GetTickEvery()
+	}
+	if options.HasAcceptSelfSigned() {
+		localOptions["accept_self_signed"] = options.GetAcceptSelfSigned()
+	}
+	if options.HasRetry() {
+		localOptions["retry"] = flattenRetry(options.GetRetry())
+	}
+	return []interface{}{localOptions}
+}
+
+func flattenRetry(r datadog.Retry) []interface{} {
+	m := make(map[string]interface{})
+	m["interval"] = r.Interval
+	m["count"] = r.Count
+	return []interface{}{m}
+}
+
+func expandOptions(m map[string]interface{}) *datadog.SyntheticsOptions {
+	return &datadog.SyntheticsOptions{
+		TickEvery:          datadog.Int(m["tick_every"].(int)),
+		FollowRedirects:    datadog.Bool(m["follow_redirects"].(bool)),
+		MinFailureDuration: datadog.Int(m["min_failure_duration"].(int)),
+		MinLocationFailed:  datadog.Int(m["min_location_failed"].(int)),
+		AcceptSelfSigned:   datadog.Bool(m["accept_self_signed"].(bool)),
+		Retry:              expandRetry(m["retry"].([]interface{})[0].(map[string]interface{})),
+	}
+}
+
+func expandRetry(m map[string]interface{}) *datadog.Retry {
+	return &datadog.Retry{
+		Count:    datadog.Int(m["count"].(int)),
+		Interval: datadog.Int(m["interval"].(int)),
+	}
 }
 
 func convertToString(i interface{}) string {

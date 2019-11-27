@@ -178,13 +178,19 @@ var createSyntheticsAPITestStep = resource.TestStep{
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.foo", "locations.0", "aws:eu-central-1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.foo", "options.tick_every", "60"),
+			"datadog_synthetics_test.foo", "options.0.tick_every", "60"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.foo", "options.follow_redirects", "true"),
+			"datadog_synthetics_test.foo", "options.0.follow_redirects", "true"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.foo", "options.min_failure_duration", "0"),
+			"datadog_synthetics_test.foo", "options.0.min_failure_duration", "0"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.foo", "options.min_location_failed", "1"),
+			"datadog_synthetics_test.foo", "options.0.min_location_failed", "1"),
+		resource.TestCheckResourceAttr(
+			"datadog_synthetics_test.foo", "options.0.retry.#", "1"),
+		resource.TestCheckResourceAttr(
+			"datadog_synthetics_test.foo", "options.0.retry.0.interval", "10"),
+		resource.TestCheckResourceAttr(
+			"datadog_synthetics_test.foo", "options.0.retry.0.count", "1"),
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.foo", "name", "name for synthetics test foo"),
 		resource.TestCheckResourceAttr(
@@ -243,11 +249,15 @@ resource "datadog_synthetics_test" "foo" {
 	]
 
 	locations = [ "aws:eu-central-1" ]
-	options = {
+	options {
 		tick_every = 60
 		follow_redirects = true
 		min_failure_duration = 0
 		min_location_failed = 1
+		retry {
+			interval = 10
+			count = 1
+		}
 	}
 
 	name = "name for synthetics test foo"
@@ -285,13 +295,21 @@ var updateSyntheticsAPITestStep = resource.TestStep{
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.foo", "locations.0", "aws:eu-central-1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.foo", "options.tick_every", "900"),
+			"datadog_synthetics_test.foo", "options.#", "1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.foo", "options.follow_redirects", "false"),
+			"datadog_synthetics_test.foo", "options.0.tick_every", "900"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.foo", "options.min_failure_duration", "10"),
+			"datadog_synthetics_test.foo", "options.0.follow_redirects", "false"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.foo", "options.min_location_failed", "1"),
+			"datadog_synthetics_test.foo", "options.0.min_failure_duration", "10"),
+		resource.TestCheckResourceAttr(
+			"datadog_synthetics_test.foo", "options.0.min_location_failed", "1"),
+		resource.TestCheckResourceAttr(
+			"datadog_synthetics_test.foo", "options.0.retry.#", "1"),
+		resource.TestCheckResourceAttr(
+			"datadog_synthetics_test.foo", "options.0.retry.0.interval", "10"),
+		resource.TestCheckResourceAttr(
+			"datadog_synthetics_test.foo", "options.0.retry.0.count", "1"),
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.foo", "name", "updated name"),
 		resource.TestCheckResourceAttr(
@@ -332,11 +350,15 @@ resource "datadog_synthetics_test" "foo" {
 
 	locations = [ "aws:eu-central-1" ]
 
-	options = {
+	options {
 		tick_every = 900
 		follow_redirects = false
 		min_failure_duration = 10
 		min_location_failed = 1
+		retry {
+			interval = 10
+			count = 1
+		}
 	}
 
 	name = "updated name"
@@ -372,9 +394,11 @@ var createSyntheticsSSLTestStep = resource.TestStep{
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.ssl", "locations.0", "aws:eu-central-1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.ssl", "options.tick_every", "60"),
+			"datadog_synthetics_test.foo", "options.#", "1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.ssl", "options.accept_self_signed", "true"),
+			"datadog_synthetics_test.ssl", "options.0.tick_every", "60"),
+		resource.TestCheckResourceAttr(
+			"datadog_synthetics_test.ssl", "options.0.accept_self_signed", "true"),
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.ssl", "name", "name for synthetics test ssl"),
 		resource.TestCheckResourceAttr(
@@ -411,7 +435,7 @@ resource "datadog_synthetics_test" "ssl" {
 	]
 
 	locations = [ "aws:eu-central-1" ]
-	options = {
+	options {
 		tick_every = 60
 		accept_self_signed = true
 	}
@@ -449,9 +473,11 @@ var updateSyntheticsSSLTestStep = resource.TestStep{
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.ssl", "locations.0", "aws:eu-central-1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.ssl", "options.tick_every", "60"),
+			"datadog_synthetics_test.foo", "options.#", "1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.ssl", "options.accept_self_signed", "false"),
+			"datadog_synthetics_test.ssl", "options.0.tick_every", "60"),
+		resource.TestCheckResourceAttr(
+			"datadog_synthetics_test.ssl", "options.0.accept_self_signed", "false"),
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.ssl", "name", "updated name"),
 		resource.TestCheckResourceAttr(
@@ -491,7 +517,7 @@ resource "datadog_synthetics_test" "ssl" {
 
 	locations = [ "aws:eu-central-1" ]
 
-	options = {
+	options {
 		tick_every = 60
 		accept_self_signed = false
 	}
@@ -537,11 +563,13 @@ var createSyntheticsBrowserTestStep = resource.TestStep{
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.bar", "locations.0", "aws:eu-central-1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.bar", "options.tick_every", "900"),
+			"datadog_synthetics_test.foo", "options.#", "1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.bar", "options.min_failure_duration", "0"),
+			"datadog_synthetics_test.bar", "options.0.tick_every", "900"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.bar", "options.min_location_failed", "1"),
+			"datadog_synthetics_test.bar", "options.0.min_failure_duration", "0"),
+		resource.TestCheckResourceAttr(
+			"datadog_synthetics_test.bar", "options.0.min_location_failed", "1"),
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.bar", "name", "name for synthetics browser test bar"),
 		resource.TestCheckResourceAttr(
@@ -574,7 +602,7 @@ resource "datadog_synthetics_test" "bar" {
 
 	device_ids = [ "laptop_large", "mobile_small" ]
 	locations = [ "aws:eu-central-1" ]
-	options = {
+	options {
 		tick_every = 900
 		min_failure_duration = 0
 		min_location_failed = 1
@@ -621,11 +649,13 @@ var updateSyntheticsBrowserTestStep = resource.TestStep{
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.bar", "locations.0", "aws:eu-central-1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.bar", "options.tick_every", "1800"),
+			"datadog_synthetics_test.foo", "options.#", "1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.bar", "options.min_failure_duration", "10"),
+			"datadog_synthetics_test.bar", "options.0.tick_every", "1800"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.bar", "options.min_location_failed", "1"),
+			"datadog_synthetics_test.bar", "options.0.min_failure_duration", "10"),
+		resource.TestCheckResourceAttr(
+			"datadog_synthetics_test.bar", "options.0.min_location_failed", "1"),
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.bar", "name", "updated name for synthetics browser test bar"),
 		resource.TestCheckResourceAttr(
@@ -656,7 +686,7 @@ resource "datadog_synthetics_test" "bar" {
 	}
 	device_ids = [ "laptop_large", "tablet" ]
 	locations = [ "aws:eu-central-1" ]
-	options = {
+	options {
 		tick_every = 1800
 		min_failure_duration = 10
 		min_location_failed = 1
