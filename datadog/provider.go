@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform/helper/logging"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
-	"github.com/zorkian/go-datadog-api"
+	"github.com/s33dunda/go-datadog-api"
 )
 
 func Provider() terraform.ResourceProvider {

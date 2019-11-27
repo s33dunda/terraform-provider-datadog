@@ -212,6 +212,8 @@ github.com/posener/complete
 github.com/posener/complete/cmd
 github.com/posener/complete/cmd/install
 github.com/posener/complete/match
+# github.com/s33dunda/go-datadog-api v2.25.1-0.20191126173349-2342a7bc6139+incompatible
+github.com/s33dunda/go-datadog-api
 # github.com/satori/go.uuid v1.2.0
 github.com/satori/go.uuid
 # github.com/spf13/afero v1.2.1
@@ -236,8 +238,6 @@ github.com/zclconf/go-cty/cty/msgpack
 github.com/zclconf/go-cty/cty/set
 # github.com/zclconf/go-cty-yaml v0.1.0
 github.com/zclconf/go-cty-yaml
-# github.com/zorkian/go-datadog-api v2.25.0+incompatible
-github.com/zorkian/go-datadog-api
 # go.opencensus.io v0.18.0
 go.opencensus.io
 go.opencensus.io/exemplar

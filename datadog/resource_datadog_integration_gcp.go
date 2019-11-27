@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/zorkian/go-datadog-api"
+	"github.com/s33dunda/go-datadog-api"
 )
 
 func resourceDatadogIntegrationGcp() *schema.Resource {

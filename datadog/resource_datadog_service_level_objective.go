@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/zorkian/go-datadog-api"
+	"github.com/s33dunda/go-datadog-api"
 )
 
 func resourceDatadogServiceLevelObjective() *schema.Resource {

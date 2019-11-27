@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zorkian/go-datadog-api"
+	"github.com/s33dunda/go-datadog-api"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )

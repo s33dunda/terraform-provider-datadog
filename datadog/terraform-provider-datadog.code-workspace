@@ -1,0 +1,12 @@
+{
+  "folders": [
+	{
+		"path": "/Users/cdunda/go/src/github.com/s33dunda/terraform-provider-datadog"
+	},
+	{
+		"name": "go-datadog-api",
+		"path": "/Users/cdunda/go/src/github.com/s33dunda/go-datadog-api"
+	}
+],
+  "settings": {}
+}

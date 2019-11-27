@@ -67,7 +67,7 @@ endif
 	@$(MAKE) -C $(GOPATH)/src/$(WEBSITE_REPO) website-provider-test PROVIDER_PATH=$(shell pwd) PROVIDER_NAME=$(PKG_NAME)
 
 update-go-client:
-	go get github.com/zorkian/go-datadog-api@$(GO_CLIENT_VERSION)
+	go get github.com/s33dunda/go-datadog-api@$(GO_CLIENT_VERSION)
 	go mod vendor
 	go mod tidy
 

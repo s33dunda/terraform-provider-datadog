@@ -197,7 +197,7 @@ BUG FIXES:
 
 IMPROVEMENTS:
 
-* Update `go-datadog-api` to v.2.11.0 and move vendoring from `gopkg.in/zorkian/go-datadog-api.v2` to `github.com/zorkian/go-datadog-api` ([#84](https://github.com/terraform-providers/terraform-provider-datadog/pull/84))
+* Update `go-datadog-api` to v.2.11.0 and move vendoring from `gopkg.in/s33dunda/go-datadog-api.v2` to `github.com/s33dunda/go-datadog-api` ([#84](https://github.com/terraform-providers/terraform-provider-datadog/pull/84))
 * Deprecate `is_admin` as part of the work needed to add support for `access_role` ([#85](https://github.com/terraform-providers/terraform-provider-datadog/pull/85))
 
 ## 1.1.0 (July 30, 2018)

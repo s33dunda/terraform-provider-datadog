@@ -18676,6 +18676,37 @@ func (s *SyntheticsOptions) SetMinLocationFailed(v int) {
 	s.MinLocationFailed = &v
 }
 
+// GetRetry returns the Retry field if non-nil, nil value otherwise.
+func (s *SyntheticsOptions) GetRetry() Retry {
+	if s == nil || s.Retry == nil {
+		return Retry{Count: Int(0), Interval: Int(0)}
+	}
+	return *s.Retry
+}
+
+// GetRetryOk returns a tuple with the Retry field if it's non-nil, nil value otherwise
+// and a boolean to check if the value has been set.
+func (s *SyntheticsOptions) GetRetryOk() (Retry, bool) {
+	if s == nil || s.Retry == nil {
+		return Retry{Count: Int(0), Interval: Int(0)}, false
+	}
+	return *s.Retry, true
+}
+
+// HasRetry returns a boolean if a field has been set.
+func (s *SyntheticsOptions) HasRetry() bool {
+	if s != nil && s.Retry != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetRetry allocates a new s.Retry and returns the pointer to it.
+func (s *SyntheticsOptions) SetRetry(v Retry) {
+	s.Retry = &v
+}
+
 // GetTickEvery returns the TickEvery field if non-nil, zero value otherwise.
 func (s *SyntheticsOptions) GetTickEvery() int {
 	if s == nil || s.TickEvery == nil {

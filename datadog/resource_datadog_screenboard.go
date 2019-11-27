@@ -10,7 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/kr/pretty"
-	datadog "github.com/zorkian/go-datadog-api"
+	datadog "github.com/s33dunda/go-datadog-api"
 )
 
 func resourceDatadogScreenboard() *schema.Resource {
