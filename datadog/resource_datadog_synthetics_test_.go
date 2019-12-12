@@ -26,6 +26,14 @@ func resourceDatadogSyntheticsTest() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Type:    resourceDatadogSyntheticsTestV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceDatadogSyntheticsTestUpgradeV0,
+				Version: 0,
+			},
+		},
 		Schema: map[string]*schema.Schema{
 			"type": &schema.Schema{
 				Type:         schema.TypeString,
@@ -122,6 +130,7 @@ func resourceDatadogSyntheticsTest() *schema.Resource {
 						"min_location_failed": &schema.Schema{
 							Type:     schema.TypeInt,
 							Optional: true,
+							Default:  1,
 						},
 						"tick_every": &schema.Schema{
 							Type:     schema.TypeInt,
@@ -172,6 +181,177 @@ func resourceDatadogSyntheticsTest() *schema.Resource {
 				Required: true,
 			},
 			"monitor_id": &schema.Schema{
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+		},
+	}
+}
+
+func resourceDatadogSyntheticsTestV0() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringInSlice(syntheticsTypes, false),
+			},
+			"subtype": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(key, old, new string, d *schema.ResourceData) bool {
+					if d.Get("type") == "api" && old == "http" && new == "" {
+						// defaults to http if type is api for retro-compatibility
+						return true
+					}
+					return old == new
+				},
+				ValidateFunc: validation.StringInSlice(syntheticsSubTypes, false),
+			},
+			"request": &schema.Schema{
+				Type:     schema.TypeMap,
+				Required: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"method": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"url": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"body": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"timeout": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  60,
+						},
+						"host": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"port": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  60,
+						},
+					},
+				},
+			},
+			"request_headers": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"assertions": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeMap,
+				},
+			},
+			"device_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"locations": {
+				Type:     schema.TypeList,
+				Required: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"options": &schema.Schema{
+				Type: schema.TypeMap,
+				DiffSuppressFunc: func(key, old, new string, d *schema.ResourceData) bool {
+					if key == "options.follow_redirects" || key == "options.accept_self_signed" {
+						// TF nested schemas is limited to string values only
+						// follow_redirects and accept_self_signed being booleans in Datadog json api
+						// we need a sane way to convert from boolean to string
+						// and from string to boolean
+						oldValue, err1 := strconv.ParseBool(old)
+						newValue, err2 := strconv.ParseBool(new)
+						if err1 != nil || err2 != nil {
+							return false
+						}
+						return oldValue == newValue
+					}
+					return old == new
+				},
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					followRedirectsRaw, ok := val.(map[string]interface{})["follow_redirects"]
+					if ok {
+						followRedirectsStr := convertToString(followRedirectsRaw)
+						switch followRedirectsStr {
+						case "0", "1":
+							warns = append(warns, fmt.Sprintf("%q.follow_redirects must be either true or false, got: %s (please change 1 => true, 0 => false)", key, followRedirectsStr))
+						case "true", "false":
+							break
+						default:
+							errs = append(errs, fmt.Errorf("%q.follow_redirects must be either true or false, got: %s", key, followRedirectsStr))
+						}
+					}
+					acceptSelfSignedRaw, ok := val.(map[string]interface{})["accept_self_signed"]
+					if ok {
+						acceptSelfSignedStr := convertToString(acceptSelfSignedRaw)
+						switch acceptSelfSignedStr {
+						case "true", "false":
+							break
+						default:
+							errs = append(errs, fmt.Errorf("%q.accept_self_signed must be either true or false, got: %s", key, acceptSelfSignedStr))
+						}
+					}
+					return
+				},
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"follow_redirects": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"min_failure_duration": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"min_location_failed": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"tick_every": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+						"accept_self_signed": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"message": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "",
+			},
+			"tags": {
+				Type:     schema.TypeList,
+				Required: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"monitor_id": {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
@@ -455,14 +635,17 @@ func flattenRetry(r datadog.Retry) []interface{} {
 }
 
 func expandOptions(m map[string]interface{}) *datadog.SyntheticsOptions {
-	return &datadog.SyntheticsOptions{
+	d := &datadog.SyntheticsOptions{
 		TickEvery:          datadog.Int(m["tick_every"].(int)),
 		FollowRedirects:    datadog.Bool(m["follow_redirects"].(bool)),
 		MinFailureDuration: datadog.Int(m["min_failure_duration"].(int)),
 		MinLocationFailed:  datadog.Int(m["min_location_failed"].(int)),
 		AcceptSelfSigned:   datadog.Bool(m["accept_self_signed"].(bool)),
-		Retry:              expandRetry(m["retry"].([]interface{})[0].(map[string]interface{})),
 	}
+	if v, ok := m["retry"]; ok && len(v.([]interface{})) > 0 && v.([]interface{})[0] != nil {
+		d.Retry = expandRetry(m["retry"].([]interface{})[0].(map[string]interface{}))
+	}
+	return d
 }
 
 func expandRetry(m map[string]interface{}) *datadog.Retry {
@@ -490,4 +673,12 @@ func convertToString(i interface{}) string {
 		}
 		return ""
 	}
+}
+
+func resourceDatadogSyntheticsTestUpgradeV0(rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+	log.Printf("[DEBUG] rawState before Migration: %#v", rawState)
+	options := rawState["options"].(map[string]interface{})
+	rawState["options"] = []interface{}{options}
+	log.Printf("[DEBUG] rawState after Migration: %#v", rawState)
+	return rawState, nil
 }
