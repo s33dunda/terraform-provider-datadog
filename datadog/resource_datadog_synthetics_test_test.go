@@ -394,7 +394,7 @@ var createSyntheticsSSLTestStep = resource.TestStep{
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.ssl", "locations.0", "aws:eu-central-1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.foo", "options.#", "1"),
+			"datadog_synthetics_test.ssl", "options.#", "1"),
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.ssl", "options.0.tick_every", "60"),
 		resource.TestCheckResourceAttr(
@@ -473,7 +473,7 @@ var updateSyntheticsSSLTestStep = resource.TestStep{
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.ssl", "locations.0", "aws:eu-central-1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.foo", "options.#", "1"),
+			"datadog_synthetics_test.ssl", "options.#", "1"),
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.ssl", "options.0.tick_every", "60"),
 		resource.TestCheckResourceAttr(
@@ -563,7 +563,7 @@ var createSyntheticsBrowserTestStep = resource.TestStep{
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.bar", "locations.0", "aws:eu-central-1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.foo", "options.#", "1"),
+			"datadog_synthetics_test.bar", "options.#", "1"),
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.bar", "options.0.tick_every", "900"),
 		resource.TestCheckResourceAttr(
@@ -649,7 +649,7 @@ var updateSyntheticsBrowserTestStep = resource.TestStep{
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.bar", "locations.0", "aws:eu-central-1"),
 		resource.TestCheckResourceAttr(
-			"datadog_synthetics_test.foo", "options.#", "1"),
+			"datadog_synthetics_test.bar", "options.#", "1"),
 		resource.TestCheckResourceAttr(
 			"datadog_synthetics_test.bar", "options.0.tick_every", "1800"),
 		resource.TestCheckResourceAttr(
